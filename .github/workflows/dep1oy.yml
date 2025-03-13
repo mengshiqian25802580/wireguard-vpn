@@ -1,28 +1,36 @@
-name: Deploy VPN
+name: Build WARP WireGuard Config
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-
-    - name: Install WireGuard
+    - name: Install required tools
       run: |
         sudo apt update
-        sudo apt install wireguard
+        sudo apt install -y wget curl gnupg wireguard
 
-    - name: Generate WireGuard Config
+    - name: Download wgcf
       run: |
-        curl -L https://example.com/generate-wireguard-config.sh | bash
+        wget https://github.com/ViRb3/wgcf/releases/latest/download/wgcf_2.2.15_linux_amd64 -O wgcf
+        chmod +x wgcf
+        sudo mv wgcf /usr/local/bin/
 
-    - name: Save Config
+    - name: Register WARP account
       run: |
-        mv /etc/wireguard/wg0.conf ./wg0.conf
-        echo "VPN config saved to wg0.conf"
+        wgcf register --accept-tos
+        wgcf generate
+
+    - name: Rename config file
+      run: |
+        mkdir wireguard
+        mv wgcf-profile.conf wireguard/wg0.conf
+
+    - name: Upload WireGuard config
+      uses: actions/upload-artifact@v3
+      with:
+        name: wireguard-config
+        path: wireguard/wg0.conf
