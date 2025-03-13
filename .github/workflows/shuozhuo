@@ -1,0 +1,36 @@
+name: Build WARP WireGuard Config
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Install required tools
+      run: |
+        sudo apt update
+        sudo apt install -y wget curl gnupg wireguard
+
+    - name: Download wgcf
+      run: |
+        wget https://github.com/ViRb3/wgcf/releases/latest/download/wgcf_2.2.15_linux_amd64 -O wgcf
+        chmod +x wgcf
+        sudo mv wgcf /usr/local/bin/
+
+    - name: Register WARP account
+      run: |
+        wgcf register --accept-tos
+        wgcf generate
+
+    - name: Rename config file
+      run: |
+        mkdir wireguard
+        mv wgcf-profile.conf wireguard/wg0.conf
+
+    - name: Upload WireGuard config
+      uses: actions/upload-artifact@v3
+      with:
+        name: wireguard-config
+        path: wireguard/wg0.conf
